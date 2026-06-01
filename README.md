@@ -44,7 +44,7 @@ python main.py --login
 base_url: "https://lnt.xmu.edu.cn"
 
 course_ids:           # 要刷的课程 ID 列表
-  - 87713             # 算法设计与分析
+  - 87713             
 
 video:
   heartbeat_interval: 60    # 心跳上报间隔（秒）
