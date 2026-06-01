@@ -16,7 +16,7 @@ pip install -r requirements.txt
 python main.py --save-cred
 python main.py --login
 
-# 3. 编辑 config.yaml：填入 course_ids（jwt 自动提取）
+# 3. 编辑 config.yaml：填入 course_ids
 
 # 4. 运行
 python main.py --run
