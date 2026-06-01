@@ -114,8 +114,8 @@ def login_and_save_state(base_url: str, state_path: str) -> None:
         browser.close()
 
 
-def auto_login(base_url: str, username: str, password: str, state_path: str) -> bool:
-    """自动填充 XMU CAS 认证表单并登录。"""
+def auto_login(base_url: str, username: str, password: str, state_path: str) -> tuple[bool, str]:
+    """自动填充 XMU CAS 认证表单并登录。成功返回 (True, 用户姓名)。"""
     os.makedirs(os.path.dirname(state_path), exist_ok=True)
     with sync_playwright() as p:
         browser = _launch_browser(p, headless=True)
@@ -127,18 +127,15 @@ def auto_login(base_url: str, username: str, password: str, state_path: str) -> 
             page.goto(f"{base_url}/user/index", timeout=30000)
             page.wait_for_timeout(3000)
 
-            # 确保切换到"账号登录" tab
             try:
                 page.click("text=账号登录", timeout=3000)
                 page.wait_for_timeout(1000)
             except Exception:
                 pass
 
-            # 填表（XMU CAS: ids.xmu.edu.cn）
             page.fill('input[placeholder="请输入学号/工号"]', username)
             page.fill('input[name="passwordText"]', password)
 
-            # 检查验证码
             captcha_input = page.locator("#captcha")
             if captcha_input.is_visible():
                 captcha_val = captcha_input.input_value()
@@ -146,11 +143,9 @@ def auto_login(base_url: str, username: str, password: str, state_path: str) -> 
                 if captcha_img.is_visible() and not captcha_val:
                     print("需要验证码，无法自动登录。请手动执行 python main.py --login")
                     browser.close()
-                    return False
+                    return False, ""
 
-            # 点击"账号登录"表单的登录按钮
             page.click("div.btn:has-text('登录'):not(:has(input))")
-            # 如果上面不行，用键盘回车
             page.keyboard.press("Enter")
 
             try:
@@ -158,17 +153,26 @@ def auto_login(base_url: str, username: str, password: str, state_path: str) -> 
             except Exception:
                 print("自动登录失败，请检查账号密码或是否需要验证码。")
                 browser.close()
-                return False
+                return False, ""
 
             page.wait_for_timeout(3000)
+
+            # 提取姓名
+            user_name = ""
+            try:
+                user_name = page.text_content("#userCurrentName", timeout=5000) or ""
+                user_name = user_name.strip()
+            except Exception:
+                pass
+
             context.storage_state(path=state_path)
-            print("自动登录成功")
+            print(f"自动登录成功 -> {user_name}")
             browser.close()
-            return True
+            return True, user_name
         except Exception as e:
             print(f"自动登录异常: {e}")
             browser.close()
-            return False
+            return False, ""
 
 
 # ── session 管理 ──────────────────────────────────────

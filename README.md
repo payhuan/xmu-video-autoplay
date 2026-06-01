@@ -12,9 +12,8 @@
 # 1. 安装依赖
 pip install -r requirements.txt
 
-# 2. 保存账号并登录
+# 2. 保存账号（自动识别姓名）
 python main.py --save-cred
-python main.py --login
 
 # 3. 编辑 config.yaml：填入 course_ids
 
@@ -25,20 +24,14 @@ python main.py --run
 ## 账号管理
 
 ```bash
-# 保存默认账号
+# 保存账号（自动登录后提取姓名作为账号名）
 python main.py --save-cred
 
-# 保存额外账号（不影响已有账号）
-python main.py --account 小号 --save-cred
+# 切换账号（列出序号，输入数字选择）
+python main.py --switch
 
-# 查看已保存的账号
-python main.py --list-accounts
-
-# 使用指定账号运行
-python main.py --account 小号 --run
-
-# 使用指定账号登录
-python main.py --account 小号 --login
+# 手动登录
+python main.py --login
 ```
 
 ## 配置说明

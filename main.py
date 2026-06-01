@@ -4,9 +4,9 @@
 
 用法:
   python main.py --login              手动登录，保存会话
-  python main.py --run                 自动刷课
-  python main.py --save-cred           保存账号密码
-  python main.py --account <名称>     切换账号
+  python main.py --save-cred           保存账号（自动识别姓名）
+  python main.py --switch              切换账号（序号选择）
+  python main.py --run                 运行
 """
 
 import argparse
@@ -23,6 +23,11 @@ def load_config(path: str = "config.yaml") -> dict:
         return yaml.safe_load(f)
 
 
+def save_config(config: dict, path: str = "config.yaml") -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.dump(config, f, allow_unicode=True, default_flow_style=False)
+
+
 def _data_dir(config: dict) -> str:
     return os.path.dirname(config["auth"]["state_file"]) or "./data"
 
@@ -36,16 +41,64 @@ def _try_auto_login(config: dict) -> bool:
     account = _active_account(config)
     creds = auth.load_credentials(data_dir, account)
     if not creds:
-        print(f"未找到账号 '{account}' 的凭据，请先保存: python main.py --save-cred")
+        print(f"未找到账号 '{account}' 的凭据")
         return False
-    return auth.auto_login(
+    ok, name = auth.auto_login(
         config["base_url"], creds["username"], creds["password"],
         config["auth"]["state_file"],
     )
+    return ok
 
 
 def cmd_login(config: dict) -> None:
     auth.login_and_save_state(config["base_url"], config["auth"]["state_file"])
+
+
+def cmd_save_cred(config: dict) -> None:
+    username = input("学号/工号: ").strip()
+    password = input("密码: ").strip()
+    if not username or not password:
+        print("用户名和密码不能为空")
+        return
+
+    # 自动登录并提取姓名
+    ok, user_name = auth.auto_login(
+        config["base_url"], username, password, config["auth"]["state_file"])
+    if not ok or not user_name:
+        print("登录失败或无法获取姓名，请先手动执行 --login，然后重试 --save-cred")
+        return
+
+    account = user_name.replace(" ", "")
+    data_dir = _data_dir(config)
+    auth.save_credentials(data_dir, account, username, password)
+
+    # 设为当前账号
+    config.setdefault("auth", {})["account"] = account
+    save_config(config)
+
+
+def cmd_switch(config: dict) -> None:
+    accounts = auth.list_accounts(_data_dir(config))
+    if not accounts:
+        print("未保存任何账号，请先执行: python main.py --save-cred")
+        return
+
+    print("可用账号:")
+    for i, a in enumerate(accounts, 1):
+        marker = " ← 当前" if a == _active_account(config) else ""
+        print(f"  [{i}] {a}{marker}")
+
+    try:
+        choice = input(f"选择 (1-{len(accounts)}): ").strip()
+        idx = int(choice) - 1
+        if 0 <= idx < len(accounts):
+            config.setdefault("auth", {})["account"] = accounts[idx]
+            save_config(config)
+            print(f"已切换到: {accounts[idx]}")
+        else:
+            print("无效选择")
+    except ValueError:
+        print("无效选择")
 
 
 def cmd_list_accounts(config: dict) -> None:
@@ -59,21 +112,10 @@ def cmd_list_accounts(config: dict) -> None:
         print(f"  {a}{marker}")
 
 
-def cmd_save_cred(config: dict) -> None:
-    account = _active_account(config)
-    username = input("学号/工号: ").strip()
-    password = input("密码: ").strip()
-    if not username or not password:
-        print("用户名和密码不能为空")
-        return
-    auth.save_credentials(_data_dir(config), account, username, password)
-
-
 def cmd_run(config: dict) -> None:
     base_url = config["base_url"]
     state_path = config["auth"]["state_file"]
     headless = config["browser"].get("headless", True)
-    jwt_token = config["auth"].get("jwt_token", "")
     course_ids = config.get("course_ids", [])
     vcfg = config.get("video", {})
 
@@ -131,7 +173,7 @@ def cmd_run(config: dict) -> None:
                     context, base_url, aid, course_id,
                     course_name, course_code, jwt_token,
                     vcfg.get("heartbeat_interval", 60),
-                    vcfg.get("completion_threshold", 80),
+                    vcfg.get("completion_threshold", 90),
                     vcfg.get("max_duration", 1800),
                 )
                 if ok:
@@ -159,28 +201,25 @@ def cmd_run(config: dict) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="XMU 课程网视频自动刷课")
+    parser = argparse.ArgumentParser(description="XMU 课程网视频辅助工具")
     parser.add_argument("--login", action="store_true", help="手动登录并保存会话")
-    parser.add_argument("--run", action="store_true", help="开始自动刷课")
-    parser.add_argument("--save-cred", action="store_true", help="保存账号密码")
-    parser.add_argument("--account", type=str, metavar="NAME", help="切换/指定账号")
-    parser.add_argument("--list-accounts", action="store_true", help="列出已保存账号")
+    parser.add_argument("--run", action="store_true", help="运行")
+    parser.add_argument("--save-cred", action="store_true", help="保存账号（自动识别姓名）")
+    parser.add_argument("--switch", action="store_true", help="切换账号（序号选择）")
     args = parser.parse_args()
 
     config = load_config()
-    if args.account:
-        config["auth"]["account"] = args.account
 
     if args.save_cred:
         cmd_save_cred(config)
+    if args.switch:
+        cmd_switch(config)
     if args.login:
         cmd_login(config)
-    if args.list_accounts:
-        cmd_list_accounts(config)
     if args.run:
         cmd_run(config)
 
-    if not any([args.login, args.run, args.save_cred, args.list_accounts]):
+    if not any([args.login, args.run, args.save_cred, args.switch]):
         parser.print_help()
         sys.exit(1)
 
