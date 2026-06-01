@@ -16,6 +16,9 @@ pip install -r requirements.txt
 python main.py --save-cred
 
 # 3. 编辑 config.yaml：填入 course_ids
+#  获取方式：
+##  a.点进课程
+##  b.课程链接为https://lnt.xmu.edu.cn/course/**course_id**/index#/，填入其中的**course_id**
 
 # 4. 运行
 python main.py --run
