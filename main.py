@@ -83,22 +83,47 @@ def cmd_switch(config: dict) -> None:
         print("未保存任何账号，请先执行: python main.py --save-cred")
         return
 
+    active = _active_account(config)
     print("可用账号:")
     for i, a in enumerate(accounts, 1):
-        marker = " ← 当前" if a == _active_account(config) else ""
+        marker = " ← 当前" if a == active else ""
         print(f"  [{i}] {a}{marker}")
 
     try:
         choice = input(f"选择 (1-{len(accounts)}): ").strip()
         idx = int(choice) - 1
-        if 0 <= idx < len(accounts):
-            config.setdefault("auth", {})["account"] = accounts[idx]
-            save_config(config)
-            print(f"已切换到: {accounts[idx]}")
-        else:
+        if not (0 <= idx < len(accounts)):
             print("无效选择")
+            return
     except ValueError:
         print("无效选择")
+        return
+
+    new_account = accounts[idx]
+    if new_account == active:
+        print(f"当前已是 {active}")
+        return
+
+    # 更新配置
+    config.setdefault("auth", {})["account"] = new_account
+    save_config(config)
+
+    # 删除旧 session，强制用新账号登录
+    state_path = config["auth"]["state_file"]
+    if os.path.exists(state_path):
+        os.remove(state_path)
+
+    creds = auth.load_credentials(_data_dir(config), new_account)
+    if not creds:
+        print(f"未找到账号 '{new_account}' 的凭据")
+        return
+
+    ok, _ = auth.auto_login(
+        config["base_url"], creds["username"], creds["password"], state_path)
+    if ok:
+        print(f"已切换到: {new_account}")
+    else:
+        print("自动登录失败，请手动 python main.py --login")
 
 
 def cmd_list_accounts(config: dict) -> None:
