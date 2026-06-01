@@ -1,16 +1,12 @@
-# XMU 课程网视频自动刷课配置
-base_url: "https://lnt.xmu.edu.cn"
-
-course_ids:
-  - 87713  # 算法设计与分析
-
-video:
-  heartbeat_interval: 60   # 心跳间隔（秒）
-  completion_threshold: 90 # 完成度阈值（%）
-  max_duration: 1800       # 单个视频最大播放时长（秒）
-
 auth:
-  state_file: "./data/auth_state.json"
-
+  account: 陈家欢
+  state_file: ./data/auth_state.json
+base_url: https://lnt.xmu.edu.cn
 browser:
   headless: true
+course_ids:
+- 87713
+video:
+  completion_threshold: 90
+  heartbeat_interval: 60
+  max_duration: 1800
