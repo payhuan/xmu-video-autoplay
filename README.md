@@ -88,11 +88,4 @@ xmu-video-autoplay/
 - **jwt_token 自动提取**：首次播放视频时自动从页面 XHR 请求中截取，无需手动配置
 - 浏览器优先用系统 Chrome/Edge，无需额外安装 Chromium
 - 隔壁项目已登录的话直接复制 `data/auth_state.json` 即可
-
-### 使用建议
-
-课程后台记录每次播放的 user-agent 等信息，同一浏览器指纹连续刷大量视频可能引起注意。建议根据自身情况调整 `config.yaml` 中的参数：
-
-- `heartbeat_interval`：心跳间隔，可适当偏离默认值（如改为 45 或 120）
-- `completion_threshold`：完成度阈值，不必每次刷到 90%
-- 不要一次性刷完所有视频，分批、间隔几小时更自然
+- **User-Agent 建议**：连续播放多个视频时，相同的浏览器指纹比较明显。可在视频统计上报载荷中修改 `user_agent` 字段（`scraper/api.py` 的 `send_video_stats` 和 `send_visit_stats` 函数），模拟不同的设备/浏览器，降低辨识度
