@@ -48,6 +48,17 @@ def cmd_login(config: dict) -> None:
     auth.login_and_save_state(config["base_url"], config["auth"]["state_file"])
 
 
+def cmd_list_accounts(config: dict) -> None:
+    accounts = auth.list_accounts(_data_dir(config))
+    if not accounts:
+        print("未保存任何账号，请先执行: python main.py --save-cred")
+        return
+    active = _active_account(config)
+    for a in accounts:
+        marker = " *" if a == active else ""
+        print(f"  {a}{marker}")
+
+
 def cmd_save_cred(config: dict) -> None:
     account = _active_account(config)
     username = input("学号/工号: ").strip()
@@ -153,6 +164,7 @@ def main() -> None:
     parser.add_argument("--run", action="store_true", help="开始自动刷课")
     parser.add_argument("--save-cred", action="store_true", help="保存账号密码")
     parser.add_argument("--account", type=str, metavar="NAME", help="切换/指定账号")
+    parser.add_argument("--list-accounts", action="store_true", help="列出已保存账号")
     args = parser.parse_args()
 
     config = load_config()
@@ -163,10 +175,12 @@ def main() -> None:
         cmd_save_cred(config)
     if args.login:
         cmd_login(config)
+    if args.list_accounts:
+        cmd_list_accounts(config)
     if args.run:
         cmd_run(config)
 
-    if not any([args.login, args.run, args.save_cred]):
+    if not any([args.login, args.run, args.save_cred, args.list_accounts]):
         parser.print_help()
         sys.exit(1)
 

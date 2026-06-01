@@ -25,9 +25,20 @@ python main.py --run
 ## 账号管理
 
 ```bash
-python main.py --save-cred      保存学号/密码
-python main.py --login          手动登录（如需验证码）
-python main.py --account 名称   切换账号
+# 保存默认账号
+python main.py --save-cred
+
+# 保存额外账号（不影响已有账号）
+python main.py --account 小号 --save-cred
+
+# 查看已保存的账号
+python main.py --list-accounts
+
+# 使用指定账号运行
+python main.py --account 小号 --run
+
+# 使用指定账号登录
+python main.py --account 小号 --login
 ```
 
 ## 配置说明
