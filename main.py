@@ -185,6 +185,8 @@ def cmd_run(config: dict) -> None:
             print(f"\n  完成: {completed}/{len(videos)}")
             context.storage_state(path=state_path)
 
+    except KeyboardInterrupt:
+        print("\n\n用户中断，正在退出...")
     finally:
         try:
             context.close()

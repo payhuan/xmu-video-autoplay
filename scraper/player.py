@@ -104,6 +104,8 @@ def play_video(
         )
         return True
 
+    except KeyboardInterrupt:
+        raise
     except Exception as e:
         print(f"    播放异常: {e}")
         return False

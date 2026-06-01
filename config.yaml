@@ -1,5 +1,5 @@
 auth:
-  account: 陈家欢
+  account: 肖钦尹
   state_file: ./data/auth_state.json
 base_url: https://lnt.xmu.edu.cn
 browser:
